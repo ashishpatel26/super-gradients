@@ -1473,7 +1473,7 @@ class SgModel:
 
         return self.evaluate(data_loader=self.valid_loader, metrics=self.valid_metrics, evaluation_type=EvaluationType.VALIDATION, epoch=epoch, silent_mode=silent_mode)
 
-    def evaluate(self, data_loader: torch.utils.data.DataLoader, metrics: MetricCollection, evaluation_type: EvaluationType, epoch: int = None, silent_mode: bool = False, metrics_progress_verbose: bool = False):
+    def evaluate(self, data_loader: torch.utils.data.DataLoader, metrics: MetricCollection, evaluation_type: EvaluationType, epoch: int = None, silent_mode: bool = False, metrics_progress_verbose: bool = True):
         """
         Evaluates the model on given dataloader and metrics.
 
@@ -1536,7 +1536,7 @@ class SgModel:
                     # COMPUTE THE RUNNING USER METRICS AND LOSS RUNNING ITEMS. RESULT TUPLE IS THEIR CONCATENATION.
                     logging_values = get_logging_values(loss_avg_meter, metrics, self.criterion)
                     pbar_message_dict = get_train_loop_description_dict(logging_values,
-                                                                        self.train_metrics,
+                                                                        metrics,
                                                                         self.loss_logging_items_names)
 
                     progress_bar_data_loader.set_postfix(**pbar_message_dict)
@@ -1547,10 +1547,11 @@ class SgModel:
             # COMPUTE THE RUNNING USER METRICS AND LOSS RUNNING ITEMS. RESULT TUPLE IS THEIR CONCATENATION.
             logging_values = get_logging_values(loss_avg_meter, metrics, self.criterion)
             pbar_message_dict = get_train_loop_description_dict(logging_values,
-                                                                self.train_metrics,
+                                                                metrics,
                                                                 self.loss_logging_items_names)
 
             progress_bar_data_loader.set_postfix(**pbar_message_dict)
+            progress_bar_data_loader.refresh()
 
         # TODO: SUPPORT PRINTING AP PER CLASS- SINCE THE METRICS ARE NOT HARD CODED ANYMORE (as done in
         #  calc_batch_prediction_accuracy_per_class in metric_utils.py), THIS IS ONLY RELEVANT WHEN CHOOSING
