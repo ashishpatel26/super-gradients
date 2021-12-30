@@ -355,8 +355,9 @@ commands:
       - run:
           name: Check if we should skip build when triggered by tag
           command: |
-            ls
+            echo "**$CIRCLE_TAG**"
             version_in_file=`cat version.txt`
+            CIRCLE_TAG="1.2.0rc1586"
             echo "The version written in version.txt is ${version_in_file}"
             if [[ $CIRCLE_TAG ]] && [[ "$CIRCLE_TAG" == "${version_in_file}" ]]; then
                 echo "\n\n version.txt is configured, avoiding loop and exiting \n\n"
