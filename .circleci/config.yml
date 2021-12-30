@@ -361,6 +361,7 @@ commands:
               echo $(git status)
               circle_ci_user="CircleCI commit"
               git log -3 --pretty=format:'%an' | head -1
+              git log -3 --pretty=format:'%an'
               
               last_commit_user=$(git log -3 --pretty=format:'%an' | head -1)
               git log -3 --pretty=format:'%an' | tail -1
