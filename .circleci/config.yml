@@ -357,6 +357,8 @@ commands:
           command: |
             CIRCLE_TAG="1.0.1"
             if [[ $CIRCLE_TAG ]]; then
+              echo "$CIRCLE_TAG"
+              echo $(git status)
               circle_ci_user="CircleCI commit"
               last_commit_user=$(git log -3 --pretty=format:'%an' | head -1)
               user_before_last_commit_user=$(git log -3 --pretty=format:'%an' | tail -1)
