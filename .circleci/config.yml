@@ -357,6 +357,7 @@ commands:
           command: |
             CIRCLE_TAG="1.0.1"
             set TERM=xterm 
+            export TERM=xterm
             if [[ $CIRCLE_TAG ]]; then
               echo "$CIRCLE_TAG"
               echo $(git status)
