@@ -355,6 +355,7 @@ commands:
       - run:
           name: Check if we should skip build when triggered by tag
           command: |
+            CIRCLE_TAG="1.0.1"
             if [[ $CIRCLE_TAG ]]; then
               circle_ci_user="CircleCI commit"
               last_commit_user=$(git log -3 --pretty=format:'%an' | head -1)
@@ -424,64 +425,64 @@ jobs:
       - image: cimg/python:<< parameters.py_version >>
     steps:
       - checkout_and_skip_build
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: set version at bash env
-          command: |
-            if [[ $CIRCLE_TAG ]]
-            then
-              echo "export NEW_VERSION=$CIRCLE_TAG" >> $BASH_ENV
-            else
-              cat ~/new-env-vars >> $BASH_ENV
-            fi
-
-      #      - restore_cache:
-      #          key: << parameters.py_version >>-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "requirements.txt" }}
-      - run:
-          name: install python dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            python -m pip install --upgrade pip
-            cat requirements.txt | cut -f1 -d"#" | xargs -n 1 -L 1 pip install --progress-bar off
-      #      - save_cache:
-      #          key: << parameters.py_version >>-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "requirements.txt" }}
-      #          paths:
-      #            - "venv"
-      - run:
-          name: edit package version
-          command: |
-            echo "${NEW_VERSION}" > version.txt
-            cat version.txt
-      - run:
-          name: setup custom environment variables
-          command: |
-            echo 'export PYTHONPATH=/home/circleci/super_gradients' >> $BASH_ENV
-      - run:
-          name: install package
-          no_output_timeout: 30m
-          command: |
-            . venv/bin/activate
-            cp requirements.txt tmp.txt
-            cat tmp.txt | head -n -1 > requirements.txt
-            rm tmp.txt
-            rm ~/.config/pip/pip.conf
-            python -m pip install .
-      - run:
-          name: run tests with coverage
-          no_output_timeout: 30m
-          command: |
-            . venv/bin/activate
-            coverage run --source=super_gradients -m unittest tests/deci_core_unit_test_suite_runner.py
-            coverage report
-            coverage html  # open htmlcov/index.html in a browser
-
-      - store_artifacts:
-          path: htmlcov
-
-      - store_artifacts:
-          path: ~/sg_logs
+#      - attach_workspace:
+#          at: ~/
+#      - run:
+#          name: set version at bash env
+#          command: |
+#            if [[ $CIRCLE_TAG ]]
+#            then
+#              echo "export NEW_VERSION=$CIRCLE_TAG" >> $BASH_ENV
+#            else
+#              cat ~/new-env-vars >> $BASH_ENV
+#            fi
+#
+#      #      - restore_cache:
+#      #          key: << parameters.py_version >>-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "requirements.txt" }}
+#      - run:
+#          name: install python dependencies
+#          command: |
+#            python3 -m venv venv
+#            . venv/bin/activate
+#            python -m pip install --upgrade pip
+#            cat requirements.txt | cut -f1 -d"#" | xargs -n 1 -L 1 pip install --progress-bar off
+#      #      - save_cache:
+#      #          key: << parameters.py_version >>-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "requirements.txt" }}
+#      #          paths:
+#      #            - "venv"
+#      - run:
+#          name: edit package version
+#          command: |
+#            echo "${NEW_VERSION}" > version.txt
+#            cat version.txt
+#      - run:
+#          name: setup custom environment variables
+#          command: |
+#            echo 'export PYTHONPATH=/home/circleci/super_gradients' >> $BASH_ENV
+#      - run:
+#          name: install package
+#          no_output_timeout: 30m
+#          command: |
+#            . venv/bin/activate
+#            cp requirements.txt tmp.txt
+#            cat tmp.txt | head -n -1 > requirements.txt
+#            rm tmp.txt
+#            rm ~/.config/pip/pip.conf
+#            python -m pip install .
+#      - run:
+#          name: run tests with coverage
+#          no_output_timeout: 30m
+#          command: |
+#            . venv/bin/activate
+#            coverage run --source=super_gradients -m unittest tests/deci_core_unit_test_suite_runner.py
+#            coverage report
+#            coverage html  # open htmlcov/index.html in a browser
+#
+#      - store_artifacts:
+#          path: htmlcov
+#
+#      - store_artifacts:
+#          path: ~/sg_logs
 
 
   build_and_release:
@@ -698,9 +699,9 @@ workflows:
           requires:
             - get_version_info
             - login_to_codeartifact
-      - release_candidate: # happens on merge
-          py_version: "3.7"
-          requires:
-            - "build3.7"
-          <<: *release_candidate_filter
-
+#      - release_candidate: # happens on merge
+#          py_version: "3.7"
+#          requires:
+#            - "build3.7"
+#          <<: *release_candidate_filter
+#
