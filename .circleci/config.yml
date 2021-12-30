@@ -355,7 +355,6 @@ commands:
       - run:
           name: Check if we should skip build when triggered by tag
           command: |
-            export TERM=xterm
             if [[ $CIRCLE_TAG ]]; then
               echo "$CIRCLE_TAG"
               circle_ci_user="CircleCI commit"
