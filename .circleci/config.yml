@@ -707,46 +707,14 @@ workflows:
       - login_to_codeartifact:
           name: "login_to_codeartifact_release"
           dev_account: false
-          pip_repo_name: "deci-clients"
-          <<: *release_tag_filter
-      - build:
-          name: "build3.7"
-          py_version: "3.7"
-          package_name: "super-gradients"
-          requires:
-            - login_to_codeartifact_release
-          <<: *release_tag_filter
-      - release_version:
-          py_version: "3.7"
-          requires:
-            - "build3.7"
-          <<: *release_tag_filter
+          pip_repo_name: "deci-packages"
       - upload_to_pypi:
           package_name: "super-gradients"
           name: upload_super_gradients_to_pypi
           sleep: "60"
           requires:
-            - "release_version"
+            - login_to_codeartifact_release
           context:
             - pypi-public
-          <<: *release_tag_filter
 
-  build_and_deploy:
-    jobs:
-      - get_version_info
-      - login_to_codeartifact:
-          pip_repo_name: "deci-clients"
-          dev_account: false
-      - build:
-          name: "build3.7"
-          py_version: "3.7"
-          package_name: "super-gradients"
-          requires:
-            - get_version_info
-            - login_to_codeartifact
-      - release_candidate: # happens on merge
-          py_version: "3.7"
-          requires:
-            - "build3.7"
-          <<: *release_candidate_filter
 
