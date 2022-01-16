@@ -78,9 +78,10 @@ class Concat(nn.Module):
 
 class Detect(nn.Module):
 
-    def __init__(self, num_classes: int, anchors: Anchors, channels: list = None):
+    def __init__(self, num_classes: int, anchors: Anchors, channels: list = None, max_num_of_detections: int = None, export: bool = False):
         super().__init__()
-
+        self.max_num_of_detections = max_num_of_detections
+        self.export = export
         self.num_classes = num_classes
         self.num_outputs = num_classes + 5
         self.detection_layers_num = anchors.detection_layers_num
@@ -110,7 +111,16 @@ class Detect(nn.Module):
                 y = torch.cat([xy, wh, y[..., 4:]], dim=4)
                 z.append(y.view(bs, -1, self.num_outputs))
 
-        return x if self.training else (torch.cat(z, 1), x)
+        if self.training:
+            return x
+        else:
+            pred = torch.cat(z, 1)
+
+            if self.max_num_of_detections is not None and self.max_num_of_detections > 0:
+                ind = torch.topk(pred[:, :, 4], self.max_num_of_detections, dim=1, largest=True, sorted=False)[1]
+                pred = torch.stack([pred[i][ind[i]] for i in range(pred.shape[0])])
+
+            return (pred, ) if self.export else (pred, x)
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
@@ -189,8 +199,11 @@ class YoLoV5Head(nn.Module):
         self._modules_list.append(
             block(width_mult(1024), width_mult(1024), depth_mult(3), activation_type, False))  # 23
 
+        max_num_of_detections = get_param(arch_params, 'max_num_of_detections', None)
+        export = get_param(arch_params, 'export', False)
+
         self._modules_list.append(
-            Detect(num_classes, anchors, channels=[width_mult(v) for v in (256, 512, 1024)]))  # 24
+            Detect(num_classes, anchors, channels=[width_mult(v) for v in (256, 512, 1024)], max_num_of_detections=max_num_of_detections, export=export))  # 24
 
     def forward(self, intermediate_output):
         """
