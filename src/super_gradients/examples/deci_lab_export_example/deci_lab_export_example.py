@@ -12,7 +12,9 @@ from super_gradients.training.utils.callbacks import DeciLabUploadCallback, Mode
 from deci_lab_client.models import Metric, QuantizationLevel, ModelMetadata, OptimizationRequestForm, HardwareType, \
     FrameworkType
 
-model = SgModel("deci_lab_optimization_resnet18_example", model_checkpoints_location='local', ckpt_root_dir="/Users/daniel/Documents/LALA")
+# Empty on purpose so that it can be fit to the trainer use case
+checkpoint_dir = ''
+model = SgModel("lab_optimization_resnet18_example", model_checkpoints_location='local', ckpt_root_dir=checkpoint_dir)
 dataset = ClassificationTestDatasetInterface(dataset_params={"batch_size": 10})
 model.connect_dataset_interface(dataset)
 
@@ -51,12 +53,21 @@ phase_callbacks = [ModelConversionCheckCallback(model_meta_data=model_meta_data)
                                          optimization_request_form=optimization_request_form)]
 
 # DEFINE TRAINING PARAMETERS
-train_params = {"max_epochs": 2, "lr_updates": [1], "lr_decay_factor": 0.1, "lr_mode": "step",
-                "lr_warmup_epochs": 0, "initial_lr": 0.1, "loss": "cross_entropy", "optimizer": optimizer,
+train_params = {"max_epochs": 2,
+                "lr_updates": [1],
+                "lr_decay_factor": 0.1,
+                "lr_mode": "step",
+                "lr_warmup_epochs": 0,
+                "initial_lr": 0.1,
+                "loss": "cross_entropy",
+                "optimizer": optimizer,
                 "criterion_params": {},
-                "train_metrics_list": [Accuracy(), Top5()], "valid_metrics_list": [Accuracy(), Top5()],
-                "loss_logging_items_names": ["Loss"], "metric_to_watch": "Accuracy",
-                "greater_metric_to_watch_is_better": True, "phase_callbacks": phase_callbacks}
+                "train_metrics_list": [Accuracy(), Top5()],
+                "valid_metrics_list": [Accuracy(), Top5()],
+                "loss_logging_items_names": ["Loss"],
+                "metric_to_watch": "Accuracy",
+                "greater_metric_to_watch_is_better": True,
+                "phase_callbacks": phase_callbacks}
 
 # RUN TRAINING. ONCE ALL EPOCHS ARE DONE THE OPTIMIZED MODEL FILE WILL BE LOCATED IN THE EXPERIMENT'S
 # CHECKPOINT DIRECTORY
