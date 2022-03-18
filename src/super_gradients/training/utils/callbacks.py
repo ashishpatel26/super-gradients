@@ -202,6 +202,12 @@ class DeciLabUploadCallback(PhaseCallback):
         logger.info(f"We couldn't finish your model optimization. Visit https://console.deci.ai for details")
 
     def upload_model(self, model):
+        """
+            This function will upload the trained model to the Deci Lab
+
+            Args:
+                model: The resulting model from the training process
+        """
         self.platform_client.add_model(
             add_model_request=self.model_meta_data,
             optimization_request=self.optimization_request_form,
@@ -210,6 +216,15 @@ class DeciLabUploadCallback(PhaseCallback):
         )
 
     def get_optimization_status(self, optimized_model_name: str):
+        """
+            This function will do fetch the optimized version of the trained model and check on its benchmark status.
+            The status will be checked against the server every 30 seconds and the process will timeout after 30 minutes
+            or log about the successful optimization - whichever happens first.
+            Args:
+                optimized_model_name (str): Optimized model name
+            Returns:
+                bool: whether or not the optimized model has been benchmarked
+        """
         def handler(_signum, _frame):
             logger.error('Process timed out. Visit https://console.deci.ai for details')
             return False
@@ -229,6 +244,13 @@ class DeciLabUploadCallback(PhaseCallback):
         return True
 
     def __call__(self, context: PhaseContext):
+        """
+            This function will attempt to upload the trained model and schedule an optimization for it.
+            Args:
+                context (PhaseContext): Training phase context
+            Returns:
+                bool: whether or not the optimized model has been benchmarked
+            """
         try:
             model = copy.deepcopy(context.net)
             self.upload_model(model=model)
