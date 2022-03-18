@@ -1,6 +1,7 @@
 import copy
 import getpass
 import os
+import time
 from enum import Enum
 import math
 from super_gradients.training.utils.utils import get_param
@@ -8,6 +9,7 @@ import numpy as np
 import onnx
 import onnxruntime
 import torch
+import signal
 
 from super_gradients.common.abstractions.abstract_logger import get_logger
 from super_gradients.training.utils.utils import get_filename_suffix_by_framework
@@ -20,10 +22,10 @@ try:
     from deci_lab_client.client import DeciPlatformClient
     from deci_lab_client.models import ModelBenchmarkState
 
-    _imported_deci_lab_failiure = None
+    _imported_deci_lab_failure = None
 except (ImportError, NameError, ModuleNotFoundError) as import_err:
     logger.warn('Failed to import deci_lab_client')
-    _imported_deci_lab_failiure = import_err
+    _imported_deci_lab_failure = import_err
 
 
 class Phase(Enum):
@@ -184,8 +186,8 @@ class DeciLabUploadCallback(PhaseCallback):
     def __init__(self, email, model_meta_data, optimization_request_form, password=None, ckpt_name="ckpt_best.pth",
                  **kwargs):
         super().__init__(phase=Phase.POST_TRAINING)
-        if _imported_deci_lab_failiure is not None:
-            raise _imported_deci_lab_failiure
+        if _imported_deci_lab_failure is not None:
+            raise _imported_deci_lab_failure
         self.model_meta_data = model_meta_data
         self.optimization_request_form = optimization_request_form
         self.conversion_kwargs = kwargs
@@ -195,30 +197,54 @@ class DeciLabUploadCallback(PhaseCallback):
         password = password or getpass.getpass()
         self.platform_client.login(email, password)
 
+    @staticmethod
+    def log_optimization_failed():
+        logger.info(f"We couldn't finish your model optimization. Visit https://console.deci.ai for details")
+
+    def upload_model(self, model):
+        self.platform_client.add_model(
+            add_model_request=self.model_meta_data,
+            optimization_request=self.optimization_request_form,
+            local_loaded_model=model.module.cpu(),
+            **self.conversion_kwargs
+        )
+
+    def get_optimization_status(self, optimized_model_name: str):
+        def handler(_signum, _frame):
+            logger.error('Process timed out. Visit https://console.deci.ai for details')
+            return False
+
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(1800)
+
+        finished = False
+        while not finished:
+            optimized_model = self.platform_client.get_model_by_name(name=optimized_model_name).data
+            if optimized_model.benchmark_state not in [ModelBenchmarkState.IN_PROGRESS, ModelBenchmarkState.PENDING]:
+                finished = True
+            else:
+                time.sleep(30)
+
+        signal.alarm(0)
+        return True
+
     def __call__(self, context: PhaseContext):
         try:
             model = copy.deepcopy(context.net)
-            model_state_dict_path = os.path.join(context.ckpt_dir, self.ckpt_name)['net']
-            model.load_state_dict(model_state_dict_path)
+            self.upload_model(model=model)
 
-            self.platform_client.add_model(self.model_meta_data,
-                                           local_loaded_model=model.module.cpu(),
-                                           optimization_request=self.optimization_request_form,
-                                           **self.conversion_kwargs)
+            model_name = self.model_meta_data.name
+            logger.info(f'Successfully added {model_name} to the model repository')
 
-            new_model_from_repo_name = self.model_meta_data.name + '_1_1'
-            finished = False
-            while not finished:
-                your_model_from_repo = self.platform_client.get_model_by_name(name=new_model_from_repo_name).data
-                if your_model_from_repo.benchmark_state not in [ModelBenchmarkState.IN_PROGRESS,
-                                                                ModelBenchmarkState.PENDING]:
-                    finished = True
-            logger.info('successfully added ' + str(your_model_from_repo.name) + ' to model repository')
-
-            filename_ext = get_filename_suffix_by_framework(self.model_meta_data.framework)
-            download_path = os.path.join(context.ckpt_dir, new_model_from_repo_name + '_optimized' + filename_ext)
-            self.platform_client.download_model(your_model_from_repo.model_id, download_to_path=download_path)
+            optimized_model_name = f'{model_name}_1_1'
+            logger.info(f"We'll wait for the scheduled optimization to finish. Please don't close this window")
+            success = self.get_optimization_status(optimized_model_name=optimized_model_name)
+            if success:
+                logger.info(f'Successfully finished your model optimization. Visit https://console.deci.ai for details')
+            else:
+                DeciLabUploadCallback.log_optimization_failed()
         except Exception as ex:
+            DeciLabUploadCallback.log_optimization_failed()
             logger.error(ex)
 
 
