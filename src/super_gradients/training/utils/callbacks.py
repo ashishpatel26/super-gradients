@@ -253,6 +253,9 @@ class DeciLabUploadCallback(PhaseCallback):
             """
         try:
             model = copy.deepcopy(context.net)
+            model_state_dict_path = os.path.join(context.ckpt_dir, self.ckpt_name)
+            model_state_dict = torch.load(model_state_dict_path)['net']
+            model.load_state_dict(state_dict=model_state_dict)
             self.upload_model(model=model)
 
             model_name = self.model_meta_data.name
