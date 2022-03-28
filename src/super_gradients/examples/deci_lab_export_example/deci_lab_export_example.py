@@ -14,6 +14,7 @@ from deci_lab_client.models import Metric, QuantizationLevel, ModelMetadata, Opt
 
 # Empty on purpose so that it can be fit to the trainer use case
 checkpoint_dir = ''
+auth_token='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0Y2FzZUBkZWNpLmFpIiwiY29tcGFueV9pZCI6IjAzZDdmZTJmLTA4MTgtNGZkOC04M2FiLWVjNWVlMGU5MDAyOCIsImNvbXBhbnlfbmFtZSI6InRlc3QiLCJ1c2VyX2lkIjoiMjhjODA3ZTYtNzA5MS00ODgyLTg0ZGItNjY4OGI5MWE3MjA0Iiwic291cmNlIjoiUGxhdGZvcm0iLCJleHAiOjkxMTM0MzM4MjV9.h4-J3oW2DGqSMS3O9S3gE8Up6dQ2DMOHkIhXZpuQeRX1wTJxXUQf-4OJ8-QuFDiQyS2u_XLb6JQ9GuOi-MZG6Q'
 model = SgModel("lab_optimization_resnet18_example", model_checkpoints_location='local', ckpt_root_dir=checkpoint_dir)
 dataset = ClassificationTestDatasetInterface(dataset_params={"batch_size": 10})
 model.connect_dataset_interface(dataset)
@@ -46,11 +47,14 @@ optimization_request_form = OptimizationRequestForm(target_hardware=HardwareType
 # IT IS ALSO RECOMMENDED TO USE A PRE TRAINING MODEL CONVERSION CHECK CALLBACK, SO THAT ANY CONVERSION
 # ERRORS WON'T APPEAR FOR THE FIRST TIME ONLY AT THE END OF TRAINING:
 
-phase_callbacks = [ModelConversionCheckCallback(model_meta_data=model_meta_data),
-                   DeciLabUploadCallback(email="trainer-tester@testcase.ai",
-                                         password="TRAINER_PASSWORD",
-                                         model_meta_data=model_meta_data,
-                                         optimization_request_form=optimization_request_form)]
+phase_callbacks = [
+    ModelConversionCheckCallback(model_meta_data=model_meta_data),
+    DeciLabUploadCallback(
+        model_meta_data=model_meta_data,
+        optimization_request_form=optimization_request_form,
+        auth_token=auth_token
+    )
+]
 
 # DEFINE TRAINING PARAMETERS
 train_params = {"max_epochs": 2,

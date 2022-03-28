@@ -1,5 +1,4 @@
 import copy
-import getpass
 import os
 import time
 from enum import Enum
@@ -12,7 +11,6 @@ import torch
 import signal
 
 from super_gradients.common.abstractions.abstract_logger import get_logger
-from super_gradients.training.utils.utils import get_filename_suffix_by_framework
 from super_gradients.training.utils.detection_utils import DetectionVisualization, DetectionPostPredictionCallback
 from super_gradients.training.utils.segmentation_utils import BinarySegmentationVisualization
 import cv2
@@ -183,8 +181,7 @@ class DeciLabUploadCallback(PhaseCallback):
         :param output_names
     """
 
-    def __init__(self, email, model_meta_data, optimization_request_form, password=None, ckpt_name="ckpt_best.pth",
-                 **kwargs):
+    def __init__(self, model_meta_data, optimization_request_form, auth_token: str = None, ckpt_name="ckpt_best.pth", **kwargs):
         super().__init__(phase=Phase.POST_TRAINING)
         if _imported_deci_lab_failure is not None:
             raise _imported_deci_lab_failure
@@ -193,9 +190,7 @@ class DeciLabUploadCallback(PhaseCallback):
         self.conversion_kwargs = kwargs
         self.ckpt_name = ckpt_name
         self.platform_client = DeciPlatformClient('api.deci.ai', 443, https=True)
-
-        password = password or getpass.getpass()
-        self.platform_client.login(email, password)
+        self.platform_client.login(token=auth_token)
 
     @staticmethod
     def log_optimization_failed():
